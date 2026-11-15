@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Каталог лотов — Auction.com{% endblock %}
+
+{% block content %}
+<!-- Верхний баннер (заглушка, вместо твоей картинки с глазами) -->
+<div class="container-fluid px-0 mb-4">
+    <img src="https://via.placeholder.com/1920x400/eeeeee/333333?text=Баннер+Аукциона" 
+        class="w-100 object-fit-cover" style="max-height: 300px;" alt="Баннер">
+</div>
+
+<div class="container">
+    <!-- Заголовок страницы (как в макете) -->
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <h2 class="fw-bold mb-0">Аукцион картин автора</h2>
+        <p class="text-muted mb-0 small">с 12 ноября</p>
+    </div>
+
+    <div class="row">
+        <!-- ЛЕВАЯ КОЛОНКА: Сетка карточек (9 из 12 частей) -->
+        <div class="col-lg-9">
+            <div class="row">
+                {% for lot in lots %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        
+                        <!-- Блок картинки (фиксированная высота, чтобы карточки не прыгали) -->
+                        <div class="position-relative" style="height: 250px; overflow: hidden;">
+                            {% if lot.images.exists %}
+                                {% for image in lot.images.all %}
+                                    <!-- Показываем картинку, если она главная, или если это первая картинка в цикле -->
+                                    {% if image.is_main or forloop.first %}
+                                        <img src="{{ image.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ lot.title }}">
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <!-- Заглушка, если фото нет -->
+                                <div class="bg-light d-flex align-items-center justify-content-center h-100 text-muted">
+                                    <small>Нет фото</small>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Текстовое описание -->
+                        <div class="card-body px-2 py-3">
+                            <p class="text-muted small mb-1 text-uppercase">Номер лота: {{ lot.id }}</p>
+                            <h6 class="card-title fw-bold mb-2">{{ lot.title }}</h6>
+                            <p class="text-muted small mb-2">{{ lot.owner.username }}</p>
+                            
+                            <p class="text-muted small mb-0">Стартовая цена:</p>
+                            <h5 class="fw-bold mb-0">{{ lot.start_price }} ₽</h5>
+                        </div>
+
+                        <!-- Кнопка -->
+                        <div class="card-footer bg-white border-0 pb-3 px-2">
+                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-outline-dark w-100 rounded-0">Подробнее</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <!-- Что показать, если база пуста -->
+                <div class="col-12">
+                    <div class="alert alert-info rounded-0">
+                        Пока нет ни одного лота. Зайдите в <a href="/admin/">админку</a>, чтобы добавить первый товар.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ КОЛОНКА: Фильтры (3 из 12 частей) -->
+        <div class="col-lg-3">
+            <!-- Поиск -->
+            <div class="input-group mb-4">
+                <input type="text" class="form-control rounded-0" placeholder="Поиск по каталогу...">
+                <button class="btn btn-outline-secondary rounded-0" type="button">Найти</button>
+            </div>
+
+            <h5 class="fw-bold mb-3">ФИЛЬТРАЦИЯ</h5>
+
+            <!-- Сортировка -->
+            <p class="text-muted small text-uppercase mb-1">Сортировка</p>
+            <select class="form-select rounded-0 mb-4">
+                <option>Сначала новые</option>
+                <option>Сначала дешевые</option>
+                <option>Сначала дорогие</option>
+            </select>
+
+            <!-- Локация -->
+            <p class="text-muted small text-uppercase mb-1">Локация</p>
+            <div class="mb-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="loc1">
+                    <label class="form-check-label small" for="loc1">Москва <span class="text-muted float-end">2</span></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="loc2">
+                    <label class="form-check-label small" for="loc2">Санкт-Петербург <span class="text-muted float-end">5</span></label>
+                </div>
+            </div>
+
+            <!-- Блок регистрации (как на макете) -->
+            <div class="border p-3 mt-5">
+                <h6 class="fw-bold text-uppercase">Регистрация открыта</h6>
+                <p class="text-muted small mb-3">Зарегистрируйтесь сейчас, чтобы делать ставки и покупать лоты.</p>
+                <button class="btn btn-dark w-100 rounded-0">Зарегистрироваться</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

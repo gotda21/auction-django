@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Этот тег критически важен для мобильных устройств. 
+        Без него сайт на телефоне будет выглядеть как уменьшенная копия компьютерной версии. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Блок title. -->
+    <title>{% block title %}Auction.com{% endblock %}</title>
+    
+    <!-- Подключаем CSS Bootstrap (стили). 
+        Мы берем его с официального сервера (CDN), поэтому нам не нужно скачивать файлы в проект. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<!-- Классы body: 
+    bg-white — белый фон.
+    d-flex flex-column — делаем body "флекс-контейнером", чтобы прижать футер к низу.
+    min-vh-100 — минимальная высота 100% экрана (чтобы футер не висел посередине, если контента мало). -->
+<body class="d-flex flex-column min-vh-100 bg-white">
+
+    <!-- ================= ШАПКА ================= -->
+    <header class="border-bottom py-3 mb-4">
+        <!-- container — это класс Bootstrap, который ограничивает ширину контента (около 1140px) 
+            и выравнивает его по центру экрана. Без него контент растянется от края до края. -->
+        <div class="container d-flex justify-content-between align-items-center">
+            
+            <!-- Логотип. Ссылка ведет на главную страницу (href="/") -->
+            <a href="/" class="text-dark text-decoration-none fs-4 fw-bold">AUCTION.COM</a>
+
+            <!-- Меню навигации. d-none d-md-flex означает: 
+                скрой это меню на телефонах (d-none), но покажи на экранах от среднего размера (d-md-flex). -->
+            <nav class="d-none d-md-flex gap-4 text-uppercase" style="font-size: 0.8rem; font-weight: 500;">
+                <a href="#" class="text-dark text-decoration-none">Аукционы</a>
+                <a href="#" class="text-dark text-decoration-none">Магазины</a>
+                <a href="#" class="text-dark text-decoration-none">Художники</a>
+            </nav>
+
+            <!-- Правый блок (Вход, Поиск, Избранное) -->
+            <div class="d-flex gap-3 align-items-center" style="font-size: 0.85rem;">
+                <!-- Пока это просто ссылки-заглушки, позже мы сделаем здесь нормальную авторизацию -->
+                <a href="#" class="text-dark text-decoration-none">Войти</a>
+                <a href="#" class="text-dark text-decoration-none">Поиск</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= ОСНОВНОЙ КОНТЕНТ ================= -->
+    <!-- flex-grow-1 заставляет этот блок растягиваться на всё свободное пространство, 
+        прижимая футер к самому низу страницы. -->
+    <main class="container flex-grow-1">
+        <!-- ВОТ ГЛАВНАЯ МАГИЯ: 
+            Сюда будут вставляться все твои страницы (главная, лот, профиль). -->
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- ================= ПОДВАЛ (ФУТЕР) ================= -->
+    <footer class="border-top py-4 mt-5 text-muted" style="font-size: 0.85rem;">
+        <div class="container d-flex justify-content-between">
+            <p class="mb-0">&copy; 2026 Auction.com. Все права защищены.</p>
+            <div class="d-flex gap-3">
+                <a href="#" class="text-muted text-decoration-none">О нас</a>
+                <a href="#" class="text-muted text-decoration-none">Контакты</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Подключаем JS Bootstrap (нужен для работы карусели, выпадающих меню и т.д.). 
+        Всегда ставится в самом конце body для быстрой загрузки страницы. -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
