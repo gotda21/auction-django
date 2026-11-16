@@ -86,10 +86,6 @@
             </div>
             <button type="submit" class="btn btn-primary btn-lg w-100 mb-4">Сделать ставку</button>
         </form>
-                <!-- ФОРМА ДЛЯ СТАВКИ (она у тебя уже есть) -->
-        <form method="POST">
-            <!-- ... -->
-        </form>
 
         <!-- НОВЫЙ БЛОК: История ставок -->
         <div class="card mb-4 border-0 shadow-sm">
@@ -114,12 +110,31 @@
             </ul>
         </div>
 
-        <!-- Информация о времени -->
-        <p class="fw-bold">До конца аукциона: <span class="text-danger">{{ lot.end_time|date:"d M Y, H:i" }}</span></p>
-        <p>Состояние: <strong>{{ lot.get_condition_display }}</strong></p>
+        <!-- Блок времени и состояния -->
+        <div class="card mb-4 border-0 bg-light">
+            <div class="card-body text-center py-4">
+                <p class="text-muted text-uppercase small mb-1">До конца торгов осталось</p>
+                
+                <!-- Контейнер для живого таймера -->
+                <h2 class="fw-bold text-danger mb-3" id="countdown-timer">
+                    <!-- Пока скрипт грузится, покажем статичное время -->
+                    Загрузка...
+                </h2>
+                
+                <!-- Статичная дата закрытия (на случай, если скрипт отключен) -->
+                <p class="text-muted small mb-0">
+                    Лот закрывается: {{ lot.end_time|date:"d E Y, в H:i" }}
+                </p>
+                
+                <!-- Скрытый тег для передачи данных в JavaScript -->
+                <span id="end-time-data" data-endtime="{{ lot.end_time|date:'c' }}" style="display: none;"></span>
+            </div>
+        </div>
+
+        <!-- Состояние (выносим отдельно) -->
+        <p class="mb-4">Состояние лота: <span class="badge bg-secondary">{{ lot.get_condition_display }}</span></p>
 
         <hr>
-
         <!-- Описание -->
         <h5>Описание</h5>
         <p class="text-secondary">{{ lot.description|linebreaksbr }}</p>
@@ -139,4 +154,51 @@
 
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timerElement = document.getElementById('countdown-timer');
+        const dataElement = document.getElementById('end-time-data');
+        const container = document.getElementById('timer-container');
+
+        if (!timerElement || !dataElement) return;
+
+        const endTimeString = dataElement.getAttribute('data-endtime');
+        // Заменяем пробел на 'T' для правильного парсинга даты в некоторых браузерах
+        const endTime = new Date(endTimeString).getTime();
+
+        const updateTimer = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            if (distance < 0) {
+                clearInterval(updateTimer);
+                timerElement.innerHTML = "АУКЦИОН ЗАВЕРШЕН";
+                timerElement.classList.remove('text-danger');
+                timerElement.classList.add('text-muted');
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            let timeString = "";
+            if (days > 0) timeString += days + " д. ";
+            timeString += hours.toString().padStart(2, '0') + ":";
+            timeString += minutes.toString().padStart(2, '0') + ":";
+            timeString += seconds.toString().padStart(2, '0');
+
+            timerElement.innerHTML = timeString;
+
+            if (distance < 1000 * 60 * 60) {
+                timerElement.classList.add('text-danger');
+            }
+        }, 1000);
+    });
+</script>
+{% endblock %}
+
 {% endblock %}
