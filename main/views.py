@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db import transaction
+from django.utils import timezone
 from .models import Lot, Bid
 from .forms import BidForm
 
@@ -20,19 +21,35 @@ def lot_detail(request, lot_id):
         if form.is_valid():
             amount = form.cleaned_data["amount"]
 
-            if amount <= lot.current_price:
+            if timezone.now() > lot.end_time:
+                messages.error(
+                    request, "Аукцион уже завершён! Ставки больше не принимаются."
+                )
+                return render(
+                    request, "main/lot_detail.html", {"lot": lot, "form": form}
+                )
+
+            elif amount <= lot.current_price:
                 messages.error(
                     request,
                     f"Ставка должна быть больше текущей цены ({lot.current_price} ₽)!",
                 )
+                return render(
+                    request, "main/lot_detail.html", {"lot": lot, "form": form}
+                )
+
             elif request.user == lot.owner:
                 messages.error(
                     request, "Вы не можете делать ставки на собственный лот!"
                 )
-            elif request.user.is_authentificated:
+                return render(
+                    request, "main/lot_detail.html", {"lot": lot, "form": form}
+                )
+
+            elif request.user.is_authenticated:
                 with transaction.atomic():
                     bid = form.save(commit=False)
-                    bid.lot = Lot
+                    bid.lot = lot
                     bid.bidder = request.user
                     bid.save()
 
