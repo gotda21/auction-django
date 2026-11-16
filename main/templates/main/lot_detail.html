@@ -1,1 +1,115 @@
-<h1>{{ lot.title }}</h1>
+{% extends 'base.html' %}
+
+{% block title %}{{ lot.title }} — Auction.com{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <!-- ЛЕВАЯ КОЛОНКА: Галерея (Карусель) -->
+    <div class="col-md-7">
+        
+        {% if lot.images.exists %}
+        <div id="lotCarousel" class="carousel slide mb-3 shadow-sm rounded" data-bs-ride="carousel">
+            <!-- Индикаторы -->
+            <div class="carousel-indicators">
+                {% for image in lot.images.all %}
+                    <button type="button" data-bs-target="#lotCarousel" data-bs-slide-to="{{ forloop.counter0 }}" 
+                            {% if forloop.first %}class="active"{% endif %}></button>
+                {% endfor %}
+            </div>
+
+            <!-- Картинки -->
+            <div class="carousel-inner">
+                {% for image in lot.images.all %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <img src="{{ image.image.url }}" class="d-block w-100" style="max-height: 600px; object-fit: contain; background-color: #f8f9fa;" alt="{{ lot.title }}">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Кнопки навигации -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#lotCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#lotCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon bg-dark rounded-circle" aria-hidden="true"></span>
+            </button>
+        </div>
+        
+        <!-- Миниатюры -->
+        <div class="d-flex gap-2 overflow-auto pb-2">
+            {% for image in lot.images.all %}
+                <img src="{{ image.image.url }}" class="img-thumbnail" 
+                    style="cursor: pointer; width: 100px; height: 75px; object-fit: cover;" 
+                    data-bs-target="#lotCarousel" data-bs-slide-to="{{ forloop.counter0 }}" alt="thumb">
+            {% endfor %}
+        </div>
+        
+        {% else %}
+        <div class="bg-light d-flex align-items-center justify-content-center rounded shadow-sm" style="height: 400px;">
+            <span class="text-muted">Нет фотографий</span>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ПРАВАЯ КОЛОНКА: Информация и ставка -->
+    <div class="col-md-5">
+        <h2 class="mb-3">{{ lot.title }}</h2>
+        
+        <p class="text-muted">
+            Категория: <span class="badge bg-secondary">{{ lot.category.name }}</span>
+        </p>
+
+        <!-- Блок с ценой -->
+        <div class="card bg-light mb-4 border-0">
+            <div class="card-body">
+                <p class="mb-1 text-muted small text-uppercase">Текущая цена</p>
+                <h2 class="text-danger fw-bold mb-0">{{ lot.current_price }} ₽</h2>
+            </div>
+        </div>
+
+        <!-- ВЫВОД СООБЩЕНИЙ (Успех/Ошибка) -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- ФОРМА ДЛЯ СТАВКИ -->
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">Сделать ставку</label>
+                {{ form.amount }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg w-100 mb-4">Сделать ставку</button>
+        </form>
+
+        <!-- Информация о времени -->
+        <p class="fw-bold">До конца аукциона: <span class="text-danger">{{ lot.end_time|date:"d M Y, H:i" }}</span></p>
+        <p>Состояние: <strong>{{ lot.get_condition_display }}</strong></p>
+
+        <hr>
+
+        <!-- Описание -->
+        <h5>Описание</h5>
+        <p class="text-secondary">{{ lot.description|linebreaksbr }}</p>
+
+        <hr>
+        
+        <!-- Продавец -->
+        <div class="d-flex align-items-center mt-3">
+            <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
+                {{ lot.owner.username|first|upper }}
+            </div>
+            <div>
+                <p class="mb-0 fw-bold">{{ lot.owner.username }}</p>
+                <p class="mb-0 text-muted small">Продавец</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
