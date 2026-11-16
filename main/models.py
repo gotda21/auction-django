@@ -31,12 +31,8 @@ class Lot(models.Model):
     description = models.TextField()
     condition = models.CharField(
         max_length=20,
-        choices=[
-            ('new', 'Новый'),
-            ('used', 'Б/У'),
-            ('refurbished', 'восстановленный')
-        ],
-        default='new'
+        choices=[("new", "Новый"), ("used", "Б/У"), ("refurbished", "восстановленный")],
+        default="new",
     )
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="lots"
@@ -67,6 +63,10 @@ class Lot(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def is_expired(self):
+        return timezone.now() > self.end_time
+
     class Meta:
         ordering = ["-created_at"]
         indexes = [
@@ -94,23 +94,17 @@ class Bid(models.Model):
     def __str__(self):
         return f"{self.bidder} - {self.amount} на {self.lot}"
 
-class LotImage(models.Model):
-    lot = models.ForeignKey(
-        Lot,
-        on_delete=models.CASCADE,
-        related_name='images'
-    )
 
-    image = models.ImageField(upload_to='lots/')
-    is_main = models.BooleanField(default=False, verbose_name='Главное фото')
+class LotImage(models.Model):
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name="images")
+
+    image = models.ImageField(upload_to="lots/")
+    is_main = models.BooleanField(default=False, verbose_name="Главное фото")
 
     class Meta:
         models.UniqueConstraint(
-            fields=['lot'],
-            condition=Q(is_main=True),
-            name='unique_main_image_per_lot'
+            fields=["lot"], condition=Q(is_main=True), name="unique_main_image_per_lot"
         )
 
     def __str__(self):
         return f"Фото для {self.lot.title}"
-

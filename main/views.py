@@ -3,7 +3,10 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
 from .models import Lot, Bid
-from .forms import BidForm
+from .forms import BidForm, CustomUserCreationForm
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views.generic import CreateView
 
 
 def lot_list(request):
@@ -62,5 +65,14 @@ def lot_detail(request, lot_id):
                 messages.error(
                     request, "Чтобы делать ставки, вам нужно войти в аккаунт."
                 )
+    bids = lot.bids.all().order_by("-amount")
 
-    return render(request, "main/lot_detail.html", {"lot": lot, "form": form})
+    return render(
+        request, "main/lot_detail.html", {"lot": lot, "form": form, "bids": bids}
+    )
+
+
+class RegisterView(CreateView):
+    form_class = CustomUserCreationForm
+    template_name = "main/register.html"
+    success_url = reverse_lazy("login")

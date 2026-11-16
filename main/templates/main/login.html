@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход — Auction.com{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">Вход на сайт</h3>
+                
+                <!-- Вывод ошибок, если пароль неверный -->
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        Неверный логин или пароль. Попробуйте еще раз.
+                    </div>
+                {% endif %}
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Имя пользователя</label>
+                        <!-- Django сам сгенерирует поле ввода, нужно только добавить класс -->
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Пароль</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-dark w-100">Войти</button>
+                </form>
+                
+                <p class="text-center mt-3 mb-0 text-muted small">
+                    Нет аккаунта? <a href="#" class="text-dark">Зарегистрироваться</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -45,10 +45,23 @@
                         <div class="card-body px-2 py-3">
                             <p class="text-muted small mb-1 text-uppercase">Номер лота: {{ lot.id }}</p>
                             <h6 class="card-title fw-bold mb-2">{{ lot.title }}</h6>
-                            <p class="text-muted small mb-2">{{ lot.owner.username }}</p>
+                            <p class="text-muted small mb-2">Владелец: {{ lot.owner.username }}</p>
                             
-                            <p class="text-muted small mb-0">Стартовая цена:</p>
-                            <h5 class="fw-bold mb-0">{{ lot.start_price }} ₽</h5>
+                            <!-- НОВЫЙ БЛОК: Отображение времени/статуса -->
+                            <div class="mb-2">
+                                {% if lot.is_expired or lot.status == 'closed' %}
+                                    <!-- Если время истекло или статус закрыт -->
+                                    <span class="badge bg-danger">Лот завершен</span>
+                                {% else %}
+                                    <!-- Если активен, показываем дату -->
+                                    <small class="text-success fw-bold">
+                                        До {{ lot.end_time|date:"d M, H:i" }}
+                                    </small>
+                                {% endif %}
+                            </div>
+
+                            <p class="text-muted small mb-0">Текущая цена:</p>
+                            <h5 class="fw-bold mb-0">{{ lot.current_price }} ₽</h5>
                         </div>
 
                         <!-- Кнопка -->

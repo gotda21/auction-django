@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация — Auction.com{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">Создать аккаунт</h3>
+                
+                <!-- Вывод общих ошибок формы -->
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        Пожалуйста, исправьте ошибки в форме ниже.
+                    </div>
+                {% endif %}
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <!-- Выводим поля формы. UserCreationForm сама создаст input'ы -->
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small class="text-muted d-block" style="font-size: 0.75rem;">{{ field.help_text }}</small>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    
+                    <button type="submit" class="btn btn-dark w-100 mt-3">Зарегистрироваться</button>
+                </form>
+                
+                <p class="text-center mt-3 mb-0 text-muted small">
+                    Уже есть аккаунт? <a href="{% url 'login' %}" class="text-dark">Войти</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
