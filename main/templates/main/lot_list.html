@@ -18,99 +18,48 @@
 
     <div class="row">
         <!-- ЛЕВАЯ КОЛОНКА: Сетка карточек (9 из 12 частей) -->
-        <div class="col-lg-9">
-            <div class="row">
-                {% for lot in lots %}
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        
-                        <!-- Блок картинки (фиксированная высота, чтобы карточки не прыгали) -->
-                        <div class="position-relative" style="height: 250px; overflow: hidden;">
-                            {% if lot.images.exists %}
-                                {% for image in lot.images.all %}
-                                    <!-- Показываем картинку, если она главная, или если это первая картинка в цикле -->
-                                    {% if image.is_main or forloop.first %}
-                                        <img src="{{ image.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ lot.title }}">
-                                    {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                <!-- Заглушка, если фото нет -->
-                                <div class="bg-light d-flex align-items-center justify-content-center h-100 text-muted">
-                                    <small>Нет фото</small>
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Текстовое описание -->
-                        <div class="card-body px-2 py-3">
-                            <p class="text-muted small mb-1 text-uppercase">Номер лота: {{ lot.id }}</p>
-                            <h6 class="card-title fw-bold mb-2">{{ lot.title }}</h6>
-                            <p class="text-muted small mb-2">Владелец: {{ lot.owner.username }}</p>
-                            
-                            <!-- НОВЫЙ БЛОК: Отображение времени/статуса -->
-                            <div class="mb-2">
-                                {% if lot.is_expired or lot.status == 'closed' %}
-                                    <!-- Если время истекло или статус закрыт -->
-                                    <span class="badge bg-danger">Лот завершен</span>
-                                {% else %}
-                                    <!-- Если активен, показываем дату -->
-                                    <small class="text-success fw-bold">
-                                        До {{ lot.end_time|date:"d M, H:i" }}
-                                    </small>
-                                {% endif %}
-                            </div>
-
-                            <p class="text-muted small mb-0">Текущая цена:</p>
-                            <h5 class="fw-bold mb-0">{{ lot.current_price }} ₽</h5>
-                        </div>
-
-                        <!-- Кнопка -->
-                        <div class="card-footer bg-white border-0 pb-3 px-2">
-                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-outline-dark w-100 rounded-0">Подробнее</a>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <!-- Что показать, если база пуста -->
-                <div class="col-12">
-                    <div class="alert alert-info rounded-0">
-                        Пока нет ни одного лота. Зайдите в <a href="/admin/">админку</a>, чтобы добавить первый товар.
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+        <div class="col-lg-9" id="lot-container">
+            {% include 'main/_lot_cards.html' %}
         </div>
 
-        <!-- ПРАВАЯ КОЛОНКА: Фильтры (3 из 12 частей) -->
+        <!-- ПРАВАЯ КОЛОНКА: Фильтры -->
         <div class="col-lg-3">
-            <!-- Поиск -->
-            <div class="input-group mb-4">
-                <input type="text" class="form-control rounded-0" placeholder="Поиск по каталогу...">
-                <button class="btn btn-outline-secondary rounded-0" type="button">Найти</button>
-            </div>
-
-            <h5 class="fw-bold mb-3">ФИЛЬТРАЦИЯ</h5>
-
-            <!-- Сортировка -->
-            <p class="text-muted small text-uppercase mb-1">Сортировка</p>
-            <select class="form-select rounded-0 mb-4">
-                <option>Сначала новые</option>
-                <option>Сначала дешевые</option>
-                <option>Сначала дорогие</option>
-            </select>
-
-            <!-- Локация -->
-            <p class="text-muted small text-uppercase mb-1">Локация</p>
-            <div class="mb-4">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="loc1">
-                    <label class="form-check-label small" for="loc1">Москва <span class="text-muted float-end">2</span></label>
+            <!-- Форма поиска и фильтрации -->
+            <!-- hx-get: куда отправлять запрос -->
+            <!-- hx-target: какой элемент обновить (левая колонка с id="lot-container") -->
+            <!-- hx-push-url: обновить URL в браузере, чтобы можно было скопировать ссылку -->
+            <form method="GET" action="{% url 'lot_list' %}" 
+                hx-get="{% url 'lot_list' %}" 
+                hx-target="#lot-container" 
+                hx-push-url="true"
+                hx-trigger="change, submit">
+                
+                <!-- Поиск -->
+                <div class="input-group mb-4">
+                    <input type="text" name="search" class="form-control rounded-0" 
+                        placeholder="Поиск по каталогу..." value="{{ search_query }}">
+                    <button class="btn btn-outline-secondary rounded-0" type="submit">Найти</button>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="loc2">
-                    <label class="form-check-label small" for="loc2">Санкт-Петербург <span class="text-muted float-end">5</span></label>
-                </div>
-            </div>
+
+                <h5 class="fw-bold mb-3">ФИЛЬТРАЦИЯ</h5>
+
+                <!-- Категории -->
+                <p class="text-muted small text-uppercase mb-1">Категория</p>
+                <!-- Убрали onchange="this.form.submit()", HTMX теперь сам отслеживает изменения -->
+                <select name="category" class="form-select rounded-0 mb-4">
+                    <option value="">Все категории</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Кнопка сброса -->
+                {% if search_query or selected_category %}
+                    <a href="{% url 'lot_list' %}" class="btn btn-outline-danger w-100 rounded-0 mt-2">Сбросить фильтры</a>
+                {% endif %}
+            </form>
 
             <!-- Блок регистрации (как на макете) -->
             <div class="border p-3 mt-5">

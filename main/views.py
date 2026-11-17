@@ -2,16 +2,39 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
-from .models import Lot, Bid
+from .models import Lot, Bid, Category
 from .forms import BidForm, CustomUserCreationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
+from django.db.models import Q
 
 
 def lot_list(request):
     lots = Lot.objects.all()
-    return render(request, "main/lot_list.html", {"lots": lots})
+    search_query = request.GET.get("search", "")
+    category_id = request.GET.get("category", "")
+
+    if search_query:
+        lots = lots.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )
+    if category_id:
+        lots = lots.filter(category_id=category_id)
+
+    categories = Category.objects.all()
+
+    context = {
+        "lots": lots,
+        "categories": categories,
+        "search_query": search_query,
+        "selected_category": category_id,
+    }
+
+    if request.META.get("HTTP_HX_REQUEST"):
+        return render(request, "main/_lot_cards.html", context)
+
+    return render(request, "main/lot_list.html", context)
 
 
 def lot_detail(request, lot_id):

@@ -1,0 +1,45 @@
+{% load humanize %}
+<div class="row">
+    {% for lot in lots %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <!-- ... весь код карточки (картинка, текст, кнопка) ... -->
+            <div class="position-relative" style="height: 250px; overflow: hidden;">
+                {% if lot.images.exists %}
+                    {% for image in lot.images.all %}
+                        {% if image.is_main or forloop.first %}
+                            <img src="{{ image.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ lot.title }}">
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center h-100 text-muted">
+                        <small>Нет фото</small>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-body px-2 py-3">
+                <p class="text-muted small mb-1 text-uppercase">Номер лота: {{ lot.id }}</p>
+                <h6 class="card-title fw-bold mb-2">{{ lot.title }}</h6>
+                <p class="text-muted small mb-2">{{ lot.owner.username }}</p>
+                
+                <div class="mb-2">
+                    {% if lot.is_expired or lot.status == 'closed' %}
+                        <span class="badge bg-danger">Лот завершен</span>
+                    {% else %}
+                        <small class="text-success fw-bold">До: {{ lot.end_time|date:"d M, H:i" }}</small>
+                    {% endif %}
+                </div>
+                <p class="text-muted small mb-0">Текущая цена:</p>
+                <h5 class="fw-bold mb-0">{{ lot.current_price|intcomma }} ₽</h5>
+            </div>
+            <div class="card-footer bg-white border-0 pb-3 px-2">
+                <a href="{% url 'lot_detail' lot.id %}" class="btn btn-outline-dark w-100 rounded-0">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info rounded-0">Пока нет ни одного лота.</div>
+    </div>
+    {% endfor %}
+</div>
