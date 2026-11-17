@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Личный кабинет — Auction.com{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <!-- Боковое меню профиля (можно сделать красивые ссылки-якоря) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body text-center">
+                <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                    {{ user.username|first|upper }}
+                </div>
+                <h4 class="fw-bold">{{ user.username }}</h4>
+                <p class="text-muted small">Дата регистрации: {{ user.date_joined|date:"d M Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="mb-4">Личный кабинет</h2>
+
+        <!-- БЛОК 1: Выигранные лоты -->
+        <h4 class="mb-3 text-success">🏆 Мои победы</h4>
+        <div class="row mb-5">
+            {% for lot in won_lots %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 border-success shadow-sm">
+                        <div class="card-body">
+                            <h6 class="fw-bold">{{ lot.title }}</h6>
+                            <p class="text-muted small mb-1">Финальная цена:</p>
+                            <h5 class="text-success">{{ lot.current_price|intcomma }} ₽</h5>
+                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-sm btn-outline-success w-100 mt-2">Посмотреть</a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12"><p class="text-muted">Пока нет выигранных лотов.</p></div>
+            {% endfor %}
+        </div>
+
+        <!-- БЛОК 2: Мои ставки -->
+        <h4 class="mb-3">Мои ставки</h4>
+        <div class="table-responsive mb-5">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Лот</th>
+                        <th>Моя ставка</th>
+                        <th>Текущая цена</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bid in my_bids %}
+                    <tr>
+                        <td><a href="{% url 'lot_detail' bid.lot.id %}" class="text-dark">{{ bid.lot.title }}</a></td>
+                        <td>{{ bid.amount|intcomma }} ₽</td>
+                        <td>{{ bid.lot.current_price|intcomma }} ₽</td>
+                        <td>
+                            {% if bid.lot.winner == user %}
+                                <span class="badge bg-success">Победа</span>
+                            {% elif bid.lot.is_expired %}
+                                <span class="badge bg-secondary">Проигрыш</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Идет торг</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">Вы еще не делали ставок.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- БЛОК 3: Мои выставленные лоты -->
+        <h4 class="mb-3">Мои лоты на продажу</h4>
+        <div class="row">
+            {% for lot in my_lots %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="fw-bold">{{ lot.title }}</h6>
+                            <p class="text-muted small mb-1">Текущая цена:</p>
+                            <h5>{{ lot.current_price|intcomma }} ₽</h5>
+                            {% if lot.is_expired %}
+                                <span class="badge bg-danger">Завершен</span>
+                            {% else %}
+                                <span class="badge bg-success">Активен</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12"><p class="text-muted">Вы еще не выставляли лоты.</p></div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

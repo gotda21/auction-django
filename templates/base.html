@@ -44,7 +44,8 @@
             <div class="d-flex gap-3 align-items-center" style="font-size: 0.85rem;">
                 {% if user.is_authenticated %}
                     <!-- Если пользователь вошел -->
-                    <span class="text-dark fw-bold">Привет, {{ user.username }}</span>
+                    <a href="{% url 'lot_create' %}" class="btn btn-sm btn-outline-dark me-2">Выставить лот</a>
+                    <a href="{% url 'profile' %}" class="text-dark text-decoration-none fw-bold">Привет, {{ user.username }}</a>
                     <form action="{% url 'logout' %}" method="post" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-link text-dark text-decoration-none p-0" style="font-size: 0.85rem;">Выйти</button>

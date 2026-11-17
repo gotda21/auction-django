@@ -3,8 +3,9 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
 from .models import Lot, Bid, Category
-from .forms import BidForm, CustomUserCreationForm
+from .forms import BidForm, CustomUserCreationForm, LotForm
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.db.models import Q
@@ -99,3 +100,37 @@ class RegisterView(CreateView):
     form_class = CustomUserCreationForm
     template_name = "main/register.html"
     success_url = reverse_lazy("login")
+
+
+@login_required
+def profile(request):
+    won_lots = Lot.objects.filter(winner=request.user)
+    my_bids = request.user.bids.all().select_related("lot").order_by("-created_at")
+    my_lots = request.user.owner_lots.all()
+
+    context = {
+        "won_lots": won_lots,
+        "my_bids": my_bids,
+        "my_lots": my_lots,
+    }
+
+    return render(request, "main/profile.html", context)
+
+
+@login_required
+def lot_create(request):
+    if request.method == "POST":
+        form = LotForm(request.POST)
+        if form.is_valid():
+            lot = form.save(commit=False)
+            lot.owner = request.user
+            lot.current_price = lot.start_price
+            lot.save()
+            messages.success(
+                request, "Лот успешно создан! Теперь вы можете загрузить фотографии."
+            )
+            return redirect("lot_detail", lot_id=lot.id)
+    else:
+        form = LotForm()
+
+    return render(request, "main/lot_form.html", {"form": form})
