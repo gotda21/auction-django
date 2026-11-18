@@ -18,10 +18,16 @@
             </div>
 
             <!-- Картинки -->
-            <div class="carousel-inner">
+            <div class="carousel-inner" style="height: 500px; background-color: #f8f9fa;">
                 {% for image in lot.images.all %}
-                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                        <img src="{{ image.image.url }}" class="d-block w-100" style="max-height: 600px; object-fit: contain; background-color: #f8f9fa;" alt="{{ lot.title }}">
+                    <div class="carousel-item {% if forloop.first %}active{% endif %} h-100">
+                        
+                        <!-- Оборачиваем img в тег a с классом glightbox -->
+                        <a href="{{ image.image.url }}" class="glightbox d-block w-100 h-100" 
+                            data-gallery="lot-gallery">
+                            <img src="{{ image.image.url }}" class="d-block w-100 h-100 object-fit-contain" alt="{{ lot.title }}">
+                        </a>
+                        
                     </div>
                 {% endfor %}
             </div>
@@ -146,16 +152,31 @@
             <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
                 {{ lot.owner.username|first|upper }}
             </div>
-            <div>
+            <div class="flex-grow-1">
                 <p class="mb-0 fw-bold">{{ lot.owner.username }}</p>
                 <p class="mb-0 text-muted small">Продавец</p>
             </div>
+            
+            <!-- Кнопка редактирования (только для владельца) -->
+            {% if user == lot.owner %}
+                <a href="{% url 'lot_edit' lot.id %}" class="btn btn-sm btn-outline-dark">Редактировать</a>
+            {% endif %}
         </div>
 
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
+<script>
+    // Инициализация лайтбокса
+    const lightbox = GLightbox({
+        selector: '.glightbox',
+        touchNavigation: true, // Листание свайпом на телефоне
+        loop: true,            // Зациклить галерею
+    });
+</script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const timerElement = document.getElementById('countdown-timer');
@@ -199,6 +220,4 @@
         }, 1000);
     });
 </script>
-{% endblock %}
-
 {% endblock %}

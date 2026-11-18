@@ -13,8 +13,15 @@
         Мы берем его с официального сервера (CDN), поэтому нам не нужно скачивать файлы в проект. -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
     <!-- HTMX для асинхронных запросов без перезагрузки -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        /* Принудительно поднимаем лайтбокс над всеми элементами страницы */
+        .glightbox-container {
+            z-index: 99999 !important;
+        }
+    </style>
 </head>
 
 <!-- Классы body: 
@@ -45,6 +52,14 @@
                 {% if user.is_authenticated %}
                     <!-- Если пользователь вошел -->
                     <a href="{% url 'lot_create' %}" class="btn btn-sm btn-outline-dark me-2">Выставить лот</a>
+                    <a href="{% url 'notifications' %}" class="text-dark text-decoration-none me-2 position-relative">
+                        🔔 Уведомления
+                        {% if unread_notifications_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                {{ unread_notifications_count }}
+                            </span>
+                        {% endif %}
+                    </a>
                     <a href="{% url 'profile' %}" class="text-dark text-decoration-none fw-bold">Привет, {{ user.username }}</a>
                     <form action="{% url 'logout' %}" method="post" class="d-inline">
                         {% csrf_token %}
@@ -84,6 +99,9 @@
     <!-- Подключаем JS Bootstrap (нужен для работы карусели, выпадающих меню и т.д.). 
         Всегда ставится в самом конце body для быстрой загрузки страницы. -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- GLightbox JS -->
+    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

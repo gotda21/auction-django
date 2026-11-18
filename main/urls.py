@@ -6,4 +6,6 @@ urlpatterns = [
     path("lot/<int:lot_id>/", views.lot_detail, name="lot_detail"),
     path("profile/", views.profile, name="profile"),
     path("lot/create/", views.lot_create, name="lot_create"),
+    path("lot/<int:lot_id>/edit/", views.lot_edit, name="lot_edit"),
+    path("notifications/", views.notifications, name="notifications"),
 ]

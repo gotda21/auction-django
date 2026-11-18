@@ -108,3 +108,27 @@ class LotImage(models.Model):
 
     def __str__(self):
         return f"Фото для {self.lot.title}"
+
+
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        OUTBID = "outbid", "Ставка перебита"
+        WON = "won", "Аукцион выигран"
+        LOST = "lost", "Аукцион проигран"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+    )
+
+    notification_type = models.CharField(max_length=20, choices=Type.choices)
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, null=True, blank=True)
+
+    message = models.CharField(max_length=225)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Уведомление для {self.user.username}: {self.message}"

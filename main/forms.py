@@ -45,6 +45,7 @@ class LotForm(forms.ModelForm):
             "min_bid_step": forms.NumberInput(attrs={"class": "from-control"}),
             "condition": forms.Select(attrs={"class": "form-select"}),
             "end_time": forms.DateTimeInput(
-                attrs={"class": "form-control", "type": "datetime-local"}
+                attrs={"class": "form-control", "type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
             ),
         }

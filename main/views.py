@@ -2,24 +2,30 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
-from .models import Lot, Bid, Category
+from .models import Lot, Bid, Category, LotImage, Notification
 from .forms import BidForm, CustomUserCreationForm, LotForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.db.models import Q
+import re
 
 
 def lot_list(request):
     lots = Lot.objects.all()
-    search_query = request.GET.get("search", "")
+    search_query = request.GET.get("search", "").strip()
     category_id = request.GET.get("category", "")
 
     if search_query:
-        lots = lots.filter(
-            Q(title__icontains=search_query) | Q(description__icontains=search_query)
-        )
+        query_words = re.split(r"\s+", search_query)
+        query_conditions = Q()
+        for word in query_words:
+            if word:
+                query_conditions |= Q(title__icontains=word) | Q(
+                    description__icontains=word
+                )
+        lots = lots.filter(query_conditions)
     if category_id:
         lots = lots.filter(category_id=category_id)
 
@@ -75,6 +81,7 @@ def lot_detail(request, lot_id):
 
             elif request.user.is_authenticated:
                 with transaction.atomic():
+                    previous_bid = lot.bids.order_by("-amount").first()
                     bid = form.save(commit=False)
                     bid.lot = lot
                     bid.bidder = request.user
@@ -82,6 +89,14 @@ def lot_detail(request, lot_id):
 
                     lot.current_price = amount
                     lot.save(update_fields=["current_price"])
+
+                    if previous_bid and previous_bid.bidder != request.user:
+                        Notification.objects.create(
+                            user=previous_bid.bidder,
+                            notification_type=Notification.Type.OUTBID,
+                            lot=lot,
+                            message=f"Ваша ставка на лот '{lot.title}' была перебита. Новая ставка: '{amount}' ₽",
+                        )
 
                 messages.success(request, f"Ваша ставка {amount} ₽ успешно принята!")
                 return redirect("lot_detail", lot_id=lot.id)
@@ -126,6 +141,11 @@ def lot_create(request):
             lot.owner = request.user
             lot.current_price = lot.start_price
             lot.save()
+
+            images = request.FILES.getlist("images")
+            for i, image in enumerate(images):
+                LotImage.objects.create(lot=lot, image=image, is_main=(i == 0))
+
             messages.success(
                 request, "Лот успешно создан! Теперь вы можете загрузить фотографии."
             )
@@ -134,3 +154,36 @@ def lot_create(request):
         form = LotForm()
 
     return render(request, "main/lot_form.html", {"form": form})
+
+
+@login_required
+def lot_edit(request, lot_id):
+    lot = get_object_or_404(Lot, pk=lot_id)
+
+    if request.user != lot.owner:
+        messages.error(request, "У вас нет прав на редактирование этого лота.")
+
+    if request.method == "POST":
+        form = LotForm(request.POST, instance=lot)
+        if form.is_valid():
+            form.save()
+
+            images = request.FILES.getlist("images")
+            for image in images:
+                LotImage.objects.create(lot=lot, image=image, is_main=False)
+
+            messages.success(request, "Лот успешно обновлён!")
+            return redirect("lot_detail", lot_id=lot.id)
+    else:
+        form = LotForm(instance=lot)
+
+    return render(request, "main/lot_form.html", {"form": form, "is_edit": True})
+
+
+@login_required
+def notifications(request):
+    user_notifications = request.user.notifications.all().order_by("-created_at")
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    return render(
+        request, "main/notifications.html", {"notifications": user_notifications}
+    )
