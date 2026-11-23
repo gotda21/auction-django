@@ -1,18 +1,21 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block title %}Encheres{% endblock %}
 
-{% block content %}
-<!-- Верхний баннер (заглушка, вместо твоей картинки с глазами) -->
-<div class="container-fluid px-0 mb-4">
-    <img src="https://via.placeholder.com/1920x400/eeeeee/333333?text=Баннер+Аукциона" 
-        class="w-100 object-fit-cover" style="max-height: 300px;" alt="Баннер">
+<!-- ВЫНОСИМ БАННЕР НА ВСЮ ШИРИНУ -->
+{% block full_width_content %}
+<div class="w-100 mb-5 position-relative" style="height: 400px; background-image: url('{% static 'images/banner.jfif' %}'); background-size: auto; background-position: center;">
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,0,0,0.4);"></div>
 </div>
+{% endblock %}
 
+{% block content %}
 <div class="container">
     <!-- Заголовок страницы (как в макете) -->
     <div class="d-flex justify-content-between align-items-end mb-4">
-        <h2 class="fw-bold mb-0">Аукцион картин автора</h2>
+        <h2 class="fw-bold mb-0">Доступные аукционы</h2>
         <p class="text-muted mb-0 small">с 12 ноября</p>
     </div>
 

@@ -80,13 +80,15 @@
 <body class="d-flex flex-column min-vh-100 bg-white">
 
     <!-- ================= ШАПКА ================= -->
-    <header class="border-bottom py-3 mb-4">
+    <header class="border-bottom py-3">
         <!-- container — это класс Bootstrap, который ограничивает ширину контента (около 1140px) 
             и выравнивает его по центру экрана. Без него контент растянется от края до края. -->
         <div class="container d-flex justify-content-between align-items-center">
             
             <!-- Логотип. Ссылка ведет на главную страницу (href="/") -->
-            <a href="/" class="text-dark text-decoration-none fs-4 fw-bold">AUCTION.COM</a>
+            <a href="/" class="navbar-brand d-flex align-items-center">
+                <img src="{% static 'images/logo.png' %}" alt="Auction Logo" style="height: 70px; width: auto;">
+            </a>
 
             <!-- Меню навигации. d-none d-md-flex означает: 
                 скрой это меню на телефонах (d-none), но покажи на экранах от среднего размера (d-md-flex). -->
@@ -127,9 +129,10 @@
     <!-- ================= ОСНОВНОЙ КОНТЕНТ ================= -->
     <!-- flex-grow-1 заставляет этот блок растягиваться на всё свободное пространство, 
         прижимая футер к самому низу страницы. -->
+    {% block full_width_content %}{% endblock %}
+
+    <!-- Основной контент (внутри контейнера) -->
     <main class="container flex-grow-1">
-        <!-- ВОТ ГЛАВНАЯ МАГИЯ: 
-            Сюда будут вставляться все твои страницы (главная, лот, профиль). -->
         {% block content %}
         {% endblock %}
     </main>
