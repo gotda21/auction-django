@@ -7,7 +7,12 @@ from django.db.models import Q
 
 
 class User(AbstractUser):
-    pass
+    avatar = models.ImageField(
+        upload_to="avatars/", null=True, blank=True, verbose_name="Аватар"
+    )
+
+    def __str__(self):
+        return self.username
 
 
 class Category(models.Model):

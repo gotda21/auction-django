@@ -1,0 +1,23 @@
+/* Regular (400) */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../fonts/Gilroy-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    /* Шрифт покажется сразу, как только загрузится */
+}
+
+/* Bold (700) */
+@font-face {
+    font-family: 'Gilroy';
+    src: url('../fonts/Gilroy-Bold.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Применяем шрифт ко всему сайту */
+body {
+    font-family: 'Gilroy', sans-serif !important;
+}

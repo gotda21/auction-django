@@ -49,3 +49,14 @@ class LotForm(forms.ModelForm):
                 format="%Y-%m-%dT%H:%M",
             ),
         }
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["username", "email", "avatar"]
+        widgets = {
+            "username": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "avatar": forms.FileInput(attrs={"class": "form-control"}),
+        }

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ lot.title }} — Auction.com{% endblock %}
+{% block title %}{{ lot.title }} - Encheres {% endblock %}
 
 {% block content %}
 <div class="row mt-4">
@@ -63,7 +63,10 @@
         <h2 class="mb-3">{{ lot.title }}</h2>
         
         <p class="text-muted">
-            Категория: <span class="badge bg-secondary">{{ lot.category.name }}</span>
+            Категория: 
+            <a href="{% url 'lot_list' %}?category={{ lot.category.id }}" class="badge bg-secondary text-decoration-none">
+                {{ lot.category.name }}
+            </a>
         </p>
 
         <!-- Блок с ценой -->
@@ -149,11 +152,17 @@
         
         <!-- Продавец -->
         <div class="d-flex align-items-center mt-3">
-            <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
-                {{ lot.owner.username|first|upper }}
-            </div>
+            {% if lot.owner.avatar %}
+                <img src="{{ lot.owner.avatar.url }}" class="rounded-circle object-fit-cover me-3" style="width: 40px; height: 40px;" alt="Avatar">
+            {% else %}
+                <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                    {{ lot.owner.username|first|upper }}
+                </div>
+            {% endif %}
             <div class="flex-grow-1">
-                <p class="mb-0 fw-bold">{{ lot.owner.username }}</p>
+                <a href="{% url 'user_profile' lot.owner.username %}" class="text-dark text-decoration-none">
+                    <p class="mb-0 fw-bold">{{ lot.owner.username }}</p>
+                </a>
                 <p class="mb-0 text-muted small">Продавец</p>
             </div>
             

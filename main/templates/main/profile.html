@@ -1,103 +1,210 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}Личный кабинет — Auction.com{% endblock %}
+{% block title %}
+    {% if is_own_profile %}Личный кабинет{% else %}Профиль {{ user_profile.username }}{% endif %} - Encheres
+{% endblock %}
 
 {% block content %}
 <div class="row mt-4">
+    <!-- ЛЕВАЯ КОЛОНКА: Карточка пользователя -->
     <div class="col-md-3">
-        <!-- Боковое меню профиля (можно сделать красивые ссылки-якоря) -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body text-center">
-                <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
-                    {{ user.username|first|upper }}
-                </div>
-                <h4 class="fw-bold">{{ user.username }}</h4>
-                <p class="text-muted small">Дата регистрации: {{ user.date_joined|date:"d M Y" }}</p>
+                {% if user_profile.avatar %}
+                    <img src="{{ user_profile.avatar.url }}" class="rounded-circle mx-auto mb-3 object-fit-cover" style="width: 100px; height: 100px;" alt="Avatar">
+                {% else %}
+                    <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center mx-auto mb-3" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        {{ user_profile.username|first|upper }}
+                    </div>
+                {% endif %}
+                <h4 class="fw-bold">{{ user_profile.username }}</h4>
+                <p class="text-muted small">На сайте с {{ user_profile.date_joined|date:"d M Y" }}</p>
             </div>
         </div>
     </div>
 
+    <!-- ПРАВАЯ КОЛОНКА: Контент -->
     <div class="col-md-9">
-        <h2 class="mb-4">Личный кабинет</h2>
+        
+        {% if is_own_profile %}
+            <h2 class="mb-4">Личный кабинет</h2>
+            
+            <!-- Кнопка редактирования -->
+            <button class="btn btn-outline-dark mb-4" type="button" data-bs-toggle="collapse" data-bs-target="#editProfileForm">
+                ✏️ Редактировать профиль
+            </button>
+
+            <!-- Скрытая форма -->
+            <div class="collapse mb-4" id="editProfileForm">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-bold">Настройки профиля</div>
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Имя пользователя</label>
+                                {{ form.username }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                {{ form.email }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Аватар</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img id="avatar-preview" 
+                                        src="{% if user_profile.avatar %}{{ user_profile.avatar.url }}{% else %}https://via.placeholder.com/80?text=No+Photo{% endif %}" 
+                                        class="rounded-circle object-fit-cover shadow-sm" 
+                                        style="width: 80px; height: 80px; border: 2px solid #dee2e6;" 
+                                        alt="Preview">
+                                    <div class="flex-grow-1">
+                                        {{ form.avatar }}
+                                        <small class="text-muted d-block mt-1">JPG, PNG</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-2">Сохранить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <h2 class="mb-4">Профиль продавца</h2>
+        {% endif %}
 
         <!-- БЛОК 1: Выигранные лоты -->
-        <h4 class="mb-3 text-success">🏆 Мои победы</h4>
+        <h4 class="mb-3 text-success">
+            {% if is_own_profile %}🏆 Мои победы{% else %}🏆 Победы пользователя{% endif %}
+        </h4>
         <div class="row mb-5">
             {% for lot in won_lots %}
                 <div class="col-md-4 mb-3">
                     <div class="card h-100 border-success shadow-sm">
-                        <div class="card-body">
-                            <h6 class="fw-bold">{{ lot.title }}</h6>
+                        <div style="height: 150px; overflow: hidden; background-color: #f8f9fa;">
+                            {% if lot.images.exists %}
+                                {% for image in lot.images.all %}
+                                    {% if image.is_main or forloop.first %}
+                                        <img src="{{ image.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ lot.title }}">
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 text-muted small">Нет фото</div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-truncate">{{ lot.title }}</h6>
                             <p class="text-muted small mb-1">Финальная цена:</p>
-                            <h5 class="text-success">{{ lot.current_price|intcomma }} ₽</h5>
-                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-sm btn-outline-success w-100 mt-2">Посмотреть</a>
+                            <h5 class="text-success mb-0">{{ lot.current_price|intcomma }} ₽</h5>
+                        </div>
+                        <div class="card-footer bg-white border-0 pb-3 pt-0">
+                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-sm btn-outline-success w-100">Посмотреть</a>
                         </div>
                     </div>
                 </div>
             {% empty %}
-                <div class="col-12"><p class="text-muted">Пока нет выигранных лотов.</p></div>
+                <div class="col-12"><p class="text-muted">Нет выигранных лотов.</p></div>
             {% endfor %}
         </div>
 
-        <!-- БЛОК 2: Мои ставки -->
-        <h4 class="mb-3">Мои ставки</h4>
-        <div class="table-responsive mb-5">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Лот</th>
-                        <th>Моя ставка</th>
-                        <th>Текущая цена</th>
-                        <th>Статус</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bid in my_bids %}
-                    <tr>
-                        <td><a href="{% url 'lot_detail' bid.lot.id %}" class="text-dark">{{ bid.lot.title }}</a></td>
-                        <td>{{ bid.amount|intcomma }} ₽</td>
-                        <td>{{ bid.lot.current_price|intcomma }} ₽</td>
-                        <td>
-                            {% if bid.lot.winner == user %}
-                                <span class="badge bg-success">Победа</span>
-                            {% elif bid.lot.is_expired %}
-                                <span class="badge bg-secondary">Проигрыш</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark">Идет торг</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="text-center text-muted">Вы еще не делали ставок.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <!-- БЛОК 2: Мои ставки (только для себя) -->
+        {% if is_own_profile %}
+            <h4 class="mb-3">Мои ставки</h4>
+            <div class="table-responsive mb-5">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Лот</th>
+                            <th>Моя ставка</th>
+                            <th>Текущая цена</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bid in my_bids %}
+                        <tr>
+                            <td><a href="{% url 'lot_detail' bid.lot.id %}" class="text-dark">{{ bid.lot.title }}</a></td>
+                            <td>{{ bid.amount|intcomma }} ₽</td>
+                            <td>{{ bid.lot.current_price|intcomma }} ₽</td>
+                            <td>
+                                {% if bid.lot.winner == user %}
+                                    <span class="badge bg-success">Победа</span>
+                                {% elif bid.lot.is_expired %}
+                                    <span class="badge bg-secondary">Проигрыш</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Идет торг</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted">Вы еще не делали ставок.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div> <!-- Закрываем table-responsive здесь -->
+        {% endif %}
 
-        <!-- БЛОК 3: Мои выставленные лоты -->
-        <h4 class="mb-3">Мои лоты на продажу</h4>
+        <!-- БЛОК 3: Лоты на продажу -->
+        <h4 class="mb-3">
+            {% if is_own_profile %}Мои лоты на продажу{% else %}Лоты пользователя на продажу{% endif %}
+        </h4>
         <div class="row">
             {% for lot in my_lots %}
                 <div class="col-md-4 mb-3">
                     <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="fw-bold">{{ lot.title }}</h6>
+                        <div style="height: 150px; overflow: hidden; background-color: #f8f9fa;">
+                            {% if lot.images.exists %}
+                                {% for image in lot.images.all %}
+                                    {% if image.is_main or forloop.first %}
+                                        <img src="{{ image.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ lot.title }}">
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 text-muted small">Нет фото</div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-truncate">{{ lot.title }}</h6>
                             <p class="text-muted small mb-1">Текущая цена:</p>
-                            <h5>{{ lot.current_price|intcomma }} ₽</h5>
+                            <h5 class="mb-2">{{ lot.current_price|intcomma }} ₽</h5>
                             {% if lot.is_expired %}
                                 <span class="badge bg-danger">Завершен</span>
                             {% else %}
                                 <span class="badge bg-success">Активен</span>
                             {% endif %}
                         </div>
+                        <div class="card-footer bg-white border-0 pb-3 pt-0">
+                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-sm btn-outline-dark w-100">Открыть лот</a>
+                        </div>
                     </div>
                 </div>
             {% empty %}
-                <div class="col-12"><p class="text-muted">Вы еще не выставляли лоты.</p></div>
+                <div class="col-12"><p class="text-muted">Нет выставленных лотов.</p></div>
             {% endfor %}
         </div>
 
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const avatarInput = document.querySelector('input[type="file"]');
+        const avatarPreview = document.getElementById('avatar-preview');
+
+        if (avatarInput && avatarPreview) {
+            avatarInput.addEventListener('change', function(event) {
+                if (event.target.files && event.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        avatarPreview.src = e.target.result;
+                    }
+                    reader.readAsDataURL(event.target.files[0]);
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

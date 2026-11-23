@@ -3,12 +3,14 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
 from .models import Lot, Bid, Category, LotImage, Notification
-from .forms import BidForm, CustomUserCreationForm, LotForm
+from .forms import BidForm, CustomUserCreationForm, LotForm, UserProfileForm
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.db.models import Q
+from django.core.paginator import Paginator
 import re
 
 
@@ -16,6 +18,10 @@ def lot_list(request):
     lots = Lot.objects.all()
     search_query = request.GET.get("search", "").strip()
     category_id = request.GET.get("category", "")
+    condition = request.GET.get("condition", "")
+    price_min = request.GET.get("price_min", "")
+    price_max = request.GET.get("price_max", "")
+    sort_by = request.GET.get("sort", "")
 
     if search_query:
         query_words = re.split(r"\s+", search_query)
@@ -29,13 +35,18 @@ def lot_list(request):
     if category_id:
         lots = lots.filter(category_id=category_id)
 
+    paginator = Paginator(lots, 9)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     categories = Category.objects.all()
 
     context = {
-        "lots": lots,
+        "lots": page_obj,
         "categories": categories,
         "search_query": search_query,
         "selected_category": category_id,
+        "page_obj": page_obj,
     }
 
     if request.META.get("HTTP_HX_REQUEST"):
@@ -118,15 +129,39 @@ class RegisterView(CreateView):
 
 
 @login_required
-def profile(request):
-    won_lots = Lot.objects.filter(winner=request.user)
-    my_bids = request.user.bids.all().select_related("lot").order_by("-created_at")
-    my_lots = request.user.owner_lots.all()
+def profile(request, username=None):
+    if username:
+        user_profile = get_object_or_404(get_user_model(), username=username)
+    else:
+        user_profile = request.user
+
+    if request.user == user_profile and request.method == "POST":
+        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Профиль успешно обновлён!")
+            return redirect("profile")
+    else:
+        form = (
+            UserProfileForm(instance=user_profile)
+            if request.user == user_profile
+            else None
+        )
+
+    won_lots = Lot.objects.filter(winner=user_profile)
+    my_lots = user_profile.owner_lots.all()
+    my_bids = None
+
+    if request.user == user_profile:
+        my_bids = request.user.bids.all().select_related("lot").order_by("-created_at")
 
     context = {
+        "user_profile": user_profile,
         "won_lots": won_lots,
         "my_bids": my_bids,
         "my_lots": my_lots,
+        "is_own_profile": request.user == user_profile,
+        "form": form,
     }
 
     return render(request, "main/profile.html", context)
