@@ -32,8 +32,8 @@
             <h2 class="mb-4">Личный кабинет</h2>
             
             <!-- Кнопка редактирования -->
-            <button class="btn btn-outline-dark mb-4" type="button" data-bs-toggle="collapse" data-bs-target="#editProfileForm">
-                ✏️ Редактировать профиль
+            <button class="btn btn-outline-dark mb-4 rounded-0" type="button" data-bs-toggle="collapse" data-bs-target="#editProfileForm">
+                Редактировать профиль
             </button>
 
             <!-- Скрытая форма -->
@@ -66,7 +66,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary mt-2">Сохранить</button>
+                            <button type="submit" class="btn btn-primary mt-2 rounded-0">Сохранить</button>
                         </form>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
 
         <!-- БЛОК 1: Выигранные лоты -->
         <h4 class="mb-3 text-success">
-            {% if is_own_profile %}🏆 Мои победы{% else %}🏆 Победы пользователя{% endif %}
+            {% if is_own_profile %}Мои победы{% else %}Победы пользователя{% endif %}
         </h4>
         <div class="row mb-5">
             {% for lot in won_lots %}
@@ -153,7 +153,7 @@
         <div class="row">
             {% for lot in my_lots %}
                 <div class="col-md-4 mb-3">
-                    <div class="card h-100 shadow-sm">
+                    <div class="card h-100 shadow-sm rounded-0">
                         <div style="height: 150px; overflow: hidden; background-color: #f8f9fa;">
                             {% if lot.images.exists %}
                                 {% for image in lot.images.all %}
@@ -176,7 +176,7 @@
                             {% endif %}
                         </div>
                         <div class="card-footer bg-white border-0 pb-3 pt-0">
-                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-sm btn-outline-dark w-100">Открыть лот</a>
+                            <a href="{% url 'lot_detail' lot.id %}" class="btn btn-sm btn-outline-dark w-100 rounded-0">Открыть лот</a>
                         </div>
                     </div>
                 </div>

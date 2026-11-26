@@ -80,7 +80,20 @@
 <body class="d-flex flex-column min-vh-100 bg-white">
 
     <!-- ================= ШАПКА ================= -->
-    <header class="border-bottom py-3">
+    <header class="border-bottom pb-3">
+        <!-- Блок вывода сообщений (глобальный) -->
+        <div class="container mt-3">
+            {% if messages %}
+                <div style="position: fixed; top: 90px; right: 20px; z-index: 1050; max-width: 350px; width: 100%;">
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show shadow-sm" role="alert" style="font-size: 0.9rem; border-radius: 8px;">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="padding: 0.8rem;"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
         <!-- container — это класс Bootstrap, который ограничивает ширину контента (около 1140px) 
             и выравнивает его по центру экрана. Без него контент растянется от края до края. -->
         <div class="container d-flex justify-content-between align-items-center">
@@ -102,16 +115,27 @@
             <div class="d-flex gap-3 align-items-center" style="font-size: 0.85rem;">
                 {% if user.is_authenticated %}
                     <!-- Если пользователь вошел -->
-                    <a href="{% url 'lot_create' %}" class="btn btn-sm btn-outline-dark me-2">Выставить лот</a>
+                    <a href="{% url 'lot_create' %}" class="btn btn-sm btn-outline-dark me-2 rounded-0">Выставить лот</a>
                     <a href="{% url 'notifications' %}" class="text-dark text-decoration-none me-2 position-relative">
-                        🔔 Уведомления
+                        Уведомления
                         {% if unread_notifications_count > 0 %}
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
                                 {{ unread_notifications_count }}
                             </span>
                         {% endif %}
                     </a>
-                    <a href="{% url 'profile' %}" class="text-dark text-decoration-none fw-bold">Привет, {{ user.username }}</a>
+                    <a href="{% url 'profile' %}" class="text-dark text-decoration-none fw-bold d-flex align-items-center gap-2">
+                        {% if user.avatar %}
+                            <!-- Если у ТЕКУЩЕГО пользователя есть аватарка -->
+                            <img src="{{ user.avatar.url }}" class="rounded-circle object-fit-cover" style="width: 35px; height: 35px;" alt="Avatar">
+                        {% else %}
+                            <!-- Если аватарки нет, показываем букву (и делаем шрифт адекватным) -->
+                            <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center" style="width: 35px; height: 35px; font-size: 1rem;">
+                                {{ user.username|first|upper }}
+                            </div>
+                        {% endif %}
+                        <span>{{ user.username }}</span>
+                    </a>
                     <form action="{% url 'logout' %}" method="post" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-link text-dark text-decoration-none p-0" style="font-size: 0.85rem;">Выйти</button>
@@ -121,7 +145,7 @@
                     <a href="{% url 'login' %}" class="text-dark text-decoration-none">Войти</a>
                     <a href="{% url 'register' %}" class="text-dark text-decoration-none">Регистрация</a>
                 {% endif %}
-                <a href="#" class="text-dark text-decoration-none">Поиск</a>
+                
             </div>
         </div>
     </header>

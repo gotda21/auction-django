@@ -56,102 +56,23 @@
         </div>
         {% endif %}
 
+        
+        <hr>
+        <!-- Описание -->
+        <h5 class="big">Описание лота</h5>
+        <p class="text-secondary">{{ lot.description|linebreaksbr }}</p>
+
+        <hr>
+
     </div>
+
 
     <!-- ПРАВАЯ КОЛОНКА: Информация и ставка -->
     <div class="col-md-5">
         <h2 class="mb-3">{{ lot.title }}</h2>
         
-        <p class="text-muted">
-            Категория: 
-            <a href="{% url 'lot_list' %}?category={{ lot.category.id }}" class="badge bg-secondary text-decoration-none">
-                {{ lot.category.name }}
-            </a>
-        </p>
-
-        <!-- Блок с ценой -->
-        <div class="card bg-light mb-4 border-0">
-            <div class="card-body">
-                <p class="mb-1 text-muted small text-uppercase">Текущая цена</p>
-                <h2 class="text-danger fw-bold mb-0">{{ lot.current_price }} ₽</h2>
-            </div>
-        </div>
-
-        <!-- ВЫВОД СООБЩЕНИЙ (Успех/Ошибка) -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- ФОРМА ДЛЯ СТАВКИ -->
-        <form method="POST">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="form-label fw-bold">Сделать ставку</label>
-                {{ form.amount }}
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg w-100 mb-4">Сделать ставку</button>
-        </form>
-
-        <!-- НОВЫЙ БЛОК: История ставок -->
-        <div class="card mb-4 border-0 shadow-sm">
-            <div class="card-header bg-white fw-bold">
-                История ставок
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for bid in bids %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-bold">{{ bid.bidder.username }}</span>
-                            <br>
-                            <small class="text-muted">{{ bid.created_at|date:"d M, H:i" }}</small>
-                        </div>
-                        <span class="badge bg-primary rounded-pill fs-6">{{ bid.amount }} ₽</span>
-                    </li>
-                {% empty %}
-                    <li class="list-group-item text-muted text-center py-3">
-                        Пока нет ставок. Будьте первым!
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- Блок времени и состояния -->
-        <div class="card mb-4 border-0 bg-light">
-            <div class="card-body text-center py-4">
-                <p class="text-muted text-uppercase small mb-1">До конца торгов осталось</p>
-                
-                <!-- Контейнер для живого таймера -->
-                <h2 class="fw-bold text-danger mb-3" id="countdown-timer">
-                    <!-- Пока скрипт грузится, покажем статичное время -->
-                    Загрузка...
-                </h2>
-                
-                <!-- Статичная дата закрытия (на случай, если скрипт отключен) -->
-                <p class="text-muted small mb-0">
-                    Лот закрывается: {{ lot.end_time|date:"d E Y, в H:i" }}
-                </p>
-                
-                <!-- Скрытый тег для передачи данных в JavaScript -->
-                <span id="end-time-data" data-endtime="{{ lot.end_time|date:'c' }}" style="display: none;"></span>
-            </div>
-        </div>
-
-        <!-- Состояние (выносим отдельно) -->
-        <p class="mb-4">Состояние лота: <span class="badge bg-secondary">{{ lot.get_condition_display }}</span></p>
-
-        <hr>
-        <!-- Описание -->
-        <h5>Описание</h5>
-        <p class="text-secondary">{{ lot.description|linebreaksbr }}</p>
-
-        <hr>
-        
         <!-- Продавец -->
-        <div class="d-flex align-items-center mt-3">
+        <div class="d-flex align-items-center mt-3 mb-3">
             {% if lot.owner.avatar %}
                 <img src="{{ lot.owner.avatar.url }}" class="rounded-circle object-fit-cover me-3" style="width: 40px; height: 40px;" alt="Avatar">
             {% else %}
@@ -168,8 +89,80 @@
             
             <!-- Кнопка редактирования (только для владельца) -->
             {% if user == lot.owner %}
-                <a href="{% url 'lot_edit' lot.id %}" class="btn btn-sm btn-outline-dark">Редактировать</a>
+                <a href="{% url 'lot_edit' lot.id %}" class="btn btn-sm btn-outline-dark rounded-0">Редактировать</a>
             {% endif %}
+        </div>
+        
+        <p class="">
+            Категория: 
+            <a href="{% url 'lot_list' %}?category={{ lot.category.id }}" class="badge bg-secondary text-decoration-none">
+                {{ lot.category.name }}
+            </a>
+        </p>
+        
+        <!-- Состояние (выносим отдельно) -->
+        <p class="mb-4">Состояние: <span class="badge bg-secondary">{{ lot.get_condition_display }}</span></p>
+
+        <!-- Блок с ценой -->
+        <div class="card bg-light mb-4 border-0">
+            <div class="card-body">
+                <p class="mb-1 big text-uppercase">Текущая цена</p>
+                <h2 class="text-muted mb-0">{{ lot.current_price }} ₽</h2>
+            </div>
+        </div>
+
+        <!-- ФОРМА ДЛЯ СТАВКИ -->
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">Сделать ставку</label>
+                {{ form.amount }}
+            </div>
+            <button type="submit" class="btn btn-lg w-100 mb-4 border rounded-0">Сделать ставку</button>
+        </form>
+
+        <!-- Блок времени и состояния -->
+        <div class="card mb-4 border-0 bg-light">
+            <div class="card-body text-center py-4">
+                <p class="text-uppercase small mb-1">До конца торгов осталось:</p>
+                
+                <!-- Контейнер для живого таймера -->
+                <h2 class="fw-bold mb-1" id="countdown-timer">
+                    <!-- Пока скрипт грузится, покажем статичное время -->
+                    Загрузка...
+                </h2>
+                
+                <!-- Статичная дата закрытия (на случай, если скрипт отключен) -->
+                <p class="text-muted small mb-0">
+                    Лот закрывается: {{ lot.end_time|date:"d E Y, в H:i" }}
+                </p>
+                
+                <!-- Скрытый тег для передачи данных в JavaScript -->
+                <span id="end-time-data" data-endtime="{{ lot.end_time|date:'c' }}" style="display: none;"></span>
+            </div>
+        </div>
+
+        <!-- НОВЫЙ БЛОК: История ставок -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold">
+                История ставок
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for bid in bids %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold">{{ bid.bidder.username }}</span>
+                            <br>
+                            <small class="text-muted">{{ bid.created_at|date:"d M, H:i" }}</small>
+                        </div>
+                        <span class="rounded-0">{{ bid.amount }} ₽</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">
+                        Пока нет ставок. Будьте первым!
+                    </li>
+                {% endfor %}
+            </ul>
         </div>
 
     </div>

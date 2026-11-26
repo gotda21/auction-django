@@ -177,13 +177,23 @@ def lot_create(request):
             lot.current_price = lot.start_price
             lot.save()
 
+            # --- СОХРАНЕНИЕ НОВЫХ ФОТО ---
             images = request.FILES.getlist("images")
-            for i, image in enumerate(images):
-                LotImage.objects.create(lot=lot, image=image, is_main=(i == 0))
+            # Получаем выбор из радиокнопки (например, 'new_0')
+            main_choice = request.POST.get("final_main_choise")
 
-            messages.success(
-                request, "Лот успешно создан! Теперь вы можете загрузить фотографии."
-            )
+            main_index = -1
+            # Если пользователь выбрал какое-то фото, вытаскиваем его индекс
+            if main_choice and main_choice.startswith("new_"):
+                main_index = int(main_choice.split("_")[1])
+            elif images:
+                # Если ничего не выбрал, первое фото по умолчанию главное
+                main_index = 0
+
+            for i, image in enumerate(images):
+                LotImage.objects.create(lot=lot, image=image, is_main=(i == main_index))
+
+            messages.success(request, "Лот успешно создан!")
             return redirect("lot_detail", lot_id=lot.id)
     else:
         form = LotForm()
@@ -197,17 +207,39 @@ def lot_edit(request, lot_id):
 
     if request.user != lot.owner:
         messages.error(request, "У вас нет прав на редактирование этого лота.")
+        return redirect("lot_detail", lot_id=lot.id)
 
     if request.method == "POST":
         form = LotForm(request.POST, instance=lot)
         if form.is_valid():
             form.save()
 
-            images = request.FILES.getlist("images")
-            for image in images:
-                LotImage.objects.create(lot=lot, image=image, is_main=False)
+            # --- ОБРАБОТКА ФОТО ---
+            # 1. Снимаем галочки "главное" со ВСЕХ существующих фото
+            LotImage.objects.filter(lot=lot).update(is_main=False)
 
-            messages.success(request, "Лот успешно обновлён!")
+            # 2. Получаем выбор пользователя ('old_5' или 'new_0')
+            main_choice = request.POST.get("final_main_choise")
+
+            # 3. Сохраняем новые фото
+            images = request.FILES.getlist("images")
+            new_main_index = -1
+
+            if main_choice and main_choice.startswith("new_"):
+                new_main_index = int(main_choice.split("_")[1])
+
+            for i, image in enumerate(images):
+                LotImage.objects.create(
+                    lot=lot, image=image, is_main=(i == new_main_index)
+                )
+
+            # 4. Если выбранным оказалось старое фото
+            if main_choice and main_choice.startswith("old_"):
+                old_img_id = int(main_choice.split("_")[1])
+                # Делаем его главным
+                LotImage.objects.filter(id=old_img_id).update(is_main=True)
+
+            messages.success(request, "Лот успешно обновлен!")
             return redirect("lot_detail", lot_id=lot.id)
     else:
         form = LotForm(instance=lot)
@@ -222,3 +254,18 @@ def notifications(request):
     return render(
         request, "main/notifications.html", {"notifications": user_notifications}
     )
+
+
+@login_required
+def lot_image_delete(request, image_id):
+    image = get_object_or_404(LotImage, id=image_id)
+
+    if request.user != image.lot.owner:
+        messages.error(request, "У вас нет прав на удаление этого фото.")
+        return redirect("lot_detail, lot_id=image.lot.id")
+
+    lot_id = image.lot.id
+    image.delete()
+
+    messages.success(request, "Фотография удалена.")
+    return redirect("lot_edit", lot_id=lot_id)

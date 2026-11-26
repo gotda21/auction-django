@@ -18,19 +18,33 @@
                 {% endif %}
             </div>
             <div class="card-body px-2 py-3">
-                <p class="text-muted small mb-1 text-uppercase">Номер лота: {{ lot.id }}</p>
-                <h6 class="card-title fw-bold mb-2">{{ lot.title }}</h6>
-                <p class="text-muted small mb-2">Владелец: {{ lot.owner.username }}</p>
+                <div class="number_of_lot d-flex justify-content-between">
+                    <p class="small mb-1 text-uppercase">Номер лота:</p>
+                    <p class="small mb-1 text-uppercase">{{ lot.id }}</p>
+                </div>
+                <h6 class="card-title mb-2">{{ lot.title }}</h6>
                 
                 <div class="mb-2">
                     {% if lot.is_expired or lot.status == 'closed' %}
                         <span class="badge bg-danger">Лот завершен</span>
                     {% else %}
-                        <small class="text-success fw-bold">До: {{ lot.end_time|date:"d M, H:i" }}</small>
+                        <small class="">До: {{ lot.end_time|date:"d M, H:i" }}</small>
                     {% endif %}
                 </div>
-                <p class="text-muted small mb-0">Текущая цена:</p>
-                <h5 class="fw-bold mb-0">{{ lot.current_price|intcomma }} ₽</h5>
+                <div class="price d-flex gap-2">
+                    <div class="price-icon">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7.22656 11.9417C7.22656 13.0167 8.05156 13.8834 9.07656 13.8834H11.1682C12.0599 13.8834 12.7849 13.125 12.7849 12.1917C12.7849 11.175 12.3432 10.8167 11.6849 10.5834L8.32656 9.4167C7.66823 9.18337 7.22656 8.82503 7.22656 7.80837C7.22656 6.87503 7.95156 6.1167 8.84323 6.1167H10.9349C11.9599 6.1167 12.7849 6.98337 12.7849 8.05837" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="#171717"/>
+                            <path d="M10 5V15" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="#171717"/>
+                            <path d="M12.5 18.3332H7.50002C3.33335 18.3332 1.66669 16.6665 1.66669 12.4998V7.49984C1.66669 3.33317 3.33335 1.6665 7.50002 1.6665H12.5C16.6667 1.6665 18.3334 3.33317 18.3334 7.49984V12.4998C18.3334 16.6665 16.6667 18.3332 12.5 18.3332Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="#171717"/>
+                        </svg>
+                    </div>
+                    <div class="price-desc d-flex flex-column">
+                        <p class="text-uppercase small mb-0">Текущая цена:</p>
+                        <h5 class="mb-0">{{ lot.current_price|intcomma }} ₽</h5>
+                    </div>
+                </div>
+                
             </div>
             <div class="card-footer bg-white border-0 pb-3 px-2">
                 <a href="{% url 'lot_detail' lot.id %}" class="btn btn-outline-dark w-100 rounded-0">Подробнее</a>

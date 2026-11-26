@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Создать лот — Auction.com{% endblock %}
+{% block title %}Создать лот — Encheres{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">
@@ -28,14 +28,45 @@
                             {% endfor %}
                         </div>
                     {% endfor %}
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label fw-bold">Фотографии лота</label>
-                        <input type="file" name="images" class="form-control" multiple accept="image/*">
-                        <small class="text-muted">Вы можете выбрать сразу несколько файлов</small>
+                        
+                        <!-- 1. СУЩЕСТВУЮЩИЕ ФОТО (Только при редактировании) -->
+                        {% if form.instance.pk and form.instance.images.exists %}
+                            <div class="mb-3">
+                                <p class="small text-muted mb-2">Уже загруженные фото (выберите главное):</p>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for img in form.instance.images.all %}
+                                        <div class="position-relative text-center">
+                                            <img src="{{ img.image.url }}" class="rounded object-fit-cover shadow-sm mb-1" style="width: 100px; height: 100px;" alt="...">
+                                            
+                                            <a href="{% url 'lot_image_delete' img.id %}" class="position-absolute top-0 end-0 bg-danger text-white rounded-circle d-flex justify-content-center align-items-center text-decoration-none shadow" style="width: 24px; height: 24px; transform: translate(50%, -50%); font-weight: bold;" title="Удалить фото">&times;</a>
+                                            
+                                            <!-- Радиокнопка для старого фото -->
+                                            <label class="d-block small text-muted">
+                                                <input type="radio" name="main_photo_choice" value="old_{{ img.id }}" class="form-check-input me-1" {% if img.is_main %}checked{% endif %}>
+                                                Главное
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- 2. ЗАГРУЗКА НОВЫХ ФОТО -->
+                        <p class="small text-muted mb-2">Добавить новые фото:</p>
+                        <input type="file" name="images" id="image-input" class="form-control mb-2" multiple accept="image/*">
+                        <small class="text-muted d-block mb-3">
+                            Выберите фото. Отметьте радиокнопкой то, которое будет <strong>главным</strong> (оно появится в каталоге).
+                        </small>
+
+                        <!-- Контейнер для предпросмотра новых картинок -->
+                        <div id="image-preview-container" class="d-flex flex-wrap gap-3"></div>
                     </div>
+                    <input type="hidden" name="final_main_choice" id="final-main-choice" value="">
                     <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'lot_list' %}" class="btn btn-outline-secondary">Отмена</a>
-                        <button type="submit" class="btn btn-primary">
+                        <a href="{% url 'lot_list' %}" class="btn btn-outline-secondary rounded-0">Отмена</a>
+                        <button type="submit" class="btn btn-primary rounded-0">
                             {% if is_edit %}Сохранить изменения{% else %}Создать лот{% endif %}
                         </button>
                     </div>
@@ -44,4 +75,94 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const imageInput = document.getElementById('image-input');
+        const previewContainer = document.getElementById('image-preview-container');
+        const finalMainChoice = document.getElementById('final-main-choice');
+
+        // 1. Функция для обновления скрытого поля при клике на ЛЮБУЮ радиокнопку (включая старые)
+        document.querySelectorAll('input[name="main_photo_choice"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                finalMainChoice.value = this.value;
+            });
+        });
+
+        // 2. Логика для предпросмотра НОВЫХ фото
+        if (imageInput && previewContainer) {
+            imageInput.addEventListener('change', function(event) {
+                const dataTransfer = new DataTransfer();
+                const files = Array.from(event.target.files);
+                files.forEach(file => dataTransfer.items.add(file));
+
+                const renderPreviews = () => {
+                    previewContainer.innerHTML = '';
+                    if (dataTransfer.files.length === 0) return;
+
+                    Array.from(dataTransfer.files).forEach((file, index) => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'position-relative text-center';
+                            
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'rounded object-fit-cover shadow-sm mb-2';
+                            img.style.width = '120px';
+                            img.style.height = '120px';
+                            
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.type = 'button';
+                            deleteBtn.innerHTML = '&times;';
+                            deleteBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center';
+                            deleteBtn.style.width = '24px';
+                            deleteBtn.style.height = '24px';
+                            deleteBtn.style.padding = '0';
+                            deleteBtn.style.transform = 'translate(50%, -50%)';
+                            
+                            deleteBtn.onclick = function() {
+                                dataTransfer.items.remove(index);
+                                imageInput.files = dataTransfer.files;
+                                renderPreviews();
+                            };
+                            
+                            const radioLabel = document.createElement('label');
+                            radioLabel.className = 'd-block small text-muted mt-1';
+                            
+                            const radio = document.createElement('input');
+                            radio.type = 'radio';
+                            radio.name = 'main_photo_choice';
+                            radio.value = 'new_' + index;
+                            radio.className = 'form-check-input me-1';
+                            
+                            // Если это первое фото, делаем его выбранным по умолчанию
+                            if (index === 0) {
+                                radio.checked = true;
+                                finalMainChoice.value = 'new_0'; // Сразу записываем в скрытое поле
+                            }
+                            
+                            // При клике на радиокнопку обновляем скрытое поле
+                            radio.addEventListener('change', function() {
+                                finalMainChoice.value = this.value;
+                            });
+                            
+                            radioLabel.appendChild(radio);
+                            radioLabel.appendChild(document.createTextNode('Главное'));
+                            
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(deleteBtn);
+                            wrapper.appendChild(radioLabel);
+                            previewContainer.appendChild(wrapper);
+                        }
+                        reader.readAsDataURL(file);
+                    });
+                };
+                renderPreviews();
+            });
+        }
+    });
+</script>
 {% endblock %}
