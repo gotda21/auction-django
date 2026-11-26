@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Удалить лот — Encheres{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger rounded-0">
+            <div class="card-header bg-danger text-white rounded-0">
+                <h4 class="mb-0">Удаление лота</h4>
+            </div>
+            <div class="card-body text-center p-4">
+                <p class="fs-5">Вы действительно хотите удалить лот <strong>«{{ lot.title }}»</strong>?</p>
+                <p class="text-muted small">Это действие нельзя будет отменить. Все ставки и фотографии также будут удалены.</p>
+                
+                <form method="POST" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'lot_detail' lot.id %}" class="btn btn-outline-secondary me-2 rounded-0">Отмена</a>
+                    <button type="submit" class="btn btn-danger rounded-0">Да, удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

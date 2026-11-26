@@ -11,6 +11,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 import re
 
 
@@ -177,18 +178,8 @@ def lot_create(request):
             lot.current_price = lot.start_price
             lot.save()
 
-            # --- СОХРАНЕНИЕ НОВЫХ ФОТО ---
             images = request.FILES.getlist("images")
-            # Получаем выбор из радиокнопки (например, 'new_0')
-            main_choice = request.POST.get("final_main_choise")
-
-            main_index = -1
-            # Если пользователь выбрал какое-то фото, вытаскиваем его индекс
-            if main_choice and main_choice.startswith("new_"):
-                main_index = int(main_choice.split("_")[1])
-            elif images:
-                # Если ничего не выбрал, первое фото по умолчанию главное
-                main_index = 0
+            main_index = int(request.POST.get("main_new_image_index", 0))
 
             for i, image in enumerate(images):
                 LotImage.objects.create(lot=lot, image=image, is_main=(i == main_index))
@@ -209,35 +200,41 @@ def lot_edit(request, lot_id):
         messages.error(request, "У вас нет прав на редактирование этого лота.")
         return redirect("lot_detail", lot_id=lot.id)
 
+    # --- 1. ОБРАБОТКА AJAX ДЛЯ СТАРЫХ ФОТО (БЕЗ ПЕРЕЗАГРУЗКИ) ---
+    if request.method == "POST" and request.POST.get("action") == "set_main_existing":
+        image_id = request.POST.get("image_id")
+        image = get_object_or_404(LotImage, id=image_id, lot=lot)
+
+        # Снимаем галочки со всех
+        LotImage.objects.filter(lot=lot).update(is_main=False)
+        # Ставим на выбранное
+        image.is_main = True
+        image.save()
+
+        return JsonResponse({"status": "ok"})
+
+    # --- 2. ОБРАБОТКА СОХРАНЕНИЯ ФОРМЫ (НОВЫЕ ФОТО) ---
     if request.method == "POST":
         form = LotForm(request.POST, instance=lot)
         if form.is_valid():
             form.save()
 
-            # --- ОБРАБОТКА ФОТО ---
-            # 1. Снимаем галочки "главное" со ВСЕХ существующих фото
-            LotImage.objects.filter(lot=lot).update(is_main=False)
+            new_main_index_str = request.POST.get("main_new_image_index")
 
-            # 2. Получаем выбор пользователя ('old_5' или 'new_0')
-            main_choice = request.POST.get("final_main_choise")
-
-            # 3. Сохраняем новые фото
+            # Проверяем, выбрал ли пользователь главное среди НОВЫХ фото
+            # (Если он не нажимал на кнопку "Сделать главным" у новых, там по умолчанию 0)
+            # Но чтобы не сбивать старое главное, мы проверяем, есть ли вообще новые файлы
             images = request.FILES.getlist("images")
-            new_main_index = -1
 
-            if main_choice and main_choice.startswith("new_"):
-                new_main_index = int(main_choice.split("_")[1])
+            if images:
+                new_main_index = int(new_main_index_str) if new_main_index_str else 0
+                # Снимаем галочки со старых, так как пользователь загрузил новые и выбрал среди них
+                LotImage.objects.filter(lot=lot).update(is_main=False)
 
-            for i, image in enumerate(images):
-                LotImage.objects.create(
-                    lot=lot, image=image, is_main=(i == new_main_index)
-                )
-
-            # 4. Если выбранным оказалось старое фото
-            if main_choice and main_choice.startswith("old_"):
-                old_img_id = int(main_choice.split("_")[1])
-                # Делаем его главным
-                LotImage.objects.filter(id=old_img_id).update(is_main=True)
+                for i, image in enumerate(images):
+                    LotImage.objects.create(
+                        lot=lot, image=image, is_main=(i == new_main_index)
+                    )
 
             messages.success(request, "Лот успешно обновлен!")
             return redirect("lot_detail", lot_id=lot.id)
@@ -262,10 +259,34 @@ def lot_image_delete(request, image_id):
 
     if request.user != image.lot.owner:
         messages.error(request, "У вас нет прав на удаление этого фото.")
-        return redirect("lot_detail, lot_id=image.lot.id")
+        return redirect("lot_detail", lot_id=image.lot.id)
 
     lot_id = image.lot.id
+    was_main = image.is_main  # Запоминаем, было ли оно главным
     image.delete()
+
+    # Если удалили главное, назначаем новое главное (первое из оставшихся)
+    if was_main:
+        next_image = LotImage.objects.filter(lot_id=lot_id).first()
+        if next_image:
+            next_image.is_main = True
+            next_image.save()
 
     messages.success(request, "Фотография удалена.")
     return redirect("lot_edit", lot_id=lot_id)
+
+
+@login_required
+def lot_delete(request, lot_id):
+    lot = get_object_or_404(Lot, pk=lot_id)
+
+    if request.user != lot.owner:
+        messages.error(request, "У вас нет прав на удаление данного лота.")
+        return redirect("lot_detail", lot_id=lot.id)
+
+    if request.method == "POST":
+        lot.delete()
+        messages.success(request, "Лот успешно удален!")
+        return redirect("profile")
+
+    return render(request, "main/lot_confirm_delete.html", {"lot": lot})

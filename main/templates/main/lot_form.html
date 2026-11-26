@@ -28,25 +28,31 @@
                             {% endfor %}
                         </div>
                     {% endfor %}
+                    <!-- Блок загрузки фотографий -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">Фотографии лота</label>
                         
-                        <!-- 1. СУЩЕСТВУЮЩИЕ ФОТО (Только при редактировании) -->
+                        <!-- 1. СУЩЕСТВУЮЩИЕ ФОТО (При редактировании) -->
                         {% if form.instance.pk and form.instance.images.exists %}
-                            <div class="mb-3">
-                                <p class="small text-muted mb-2">Уже загруженные фото (выберите главное):</p>
-                                <div class="d-flex flex-wrap gap-2">
+                            <div class="mb-4 p-3 bg-light rounded">
+                                <p class="small fw-bold mb-2">Уже загруженные фото (первое — главное):</p>
+                                <div class="d-flex flex-wrap gap-3">
                                     {% for img in form.instance.images.all %}
                                         <div class="position-relative text-center">
-                                            <img src="{{ img.image.url }}" class="rounded object-fit-cover shadow-sm mb-1" style="width: 100px; height: 100px;" alt="...">
+                                            <img src="{{ img.image.url }}" class="rounded object-fit-cover shadow-sm mb-2" style="width: 100px; height: 100px;" alt="...">
                                             
-                                            <a href="{% url 'lot_image_delete' img.id %}" class="position-absolute top-0 end-0 bg-danger text-white rounded-circle d-flex justify-content-center align-items-center text-decoration-none shadow" style="width: 24px; height: 24px; transform: translate(50%, -50%); font-weight: bold;" title="Удалить фото">&times;</a>
+                                            <!-- Бейдж "Главное" -->
+                                            {% if img.is_main %}
+                                                <span class="position-absolute top-0 start-0 badge bg-success m-1" style="font-size: 0.6rem;">Главное</span>
+                                            {% else %}
+                                                <!-- Кнопка "Сделать главным" только если НЕ главное -->
+                                                {% if not img.is_main %}
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-0 make-main-btn" data-id="{{ img.id }}" style="font-size: 0.7rem;">Сделать главным</button>
+                                                {% endif %}
+                                            {% endif %}
                                             
-                                            <!-- Радиокнопка для старого фото -->
-                                            <label class="d-block small text-muted">
-                                                <input type="radio" name="main_photo_choice" value="old_{{ img.id }}" class="form-check-input me-1" {% if img.is_main %}checked{% endif %}>
-                                                Главное
-                                            </label>
+                                            <!-- Кнопка удаления -->
+                                            <a href="{% url 'lot_image_delete' img.id %}" class="position-absolute top-0 end-0 bg-danger text-white rounded-circle d-flex justify-content-center align-items-center text-decoration-none shadow" style="width: 20px; height: 20px; transform: translate(50%, -50%); font-size: 0.8rem;" title="Удалить">&times;</a>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -54,21 +60,27 @@
                         {% endif %}
 
                         <!-- 2. ЗАГРУЗКА НОВЫХ ФОТО -->
-                        <p class="small text-muted mb-2">Добавить новые фото:</p>
-                        <input type="file" name="images" id="image-input" class="form-control mb-2" multiple accept="image/*">
-                        <small class="text-muted d-block mb-3">
-                            Выберите фото. Отметьте радиокнопкой то, которое будет <strong>главным</strong> (оно появится в каталоге).
-                        </small>
-
-                        <!-- Контейнер для предпросмотра новых картинок -->
-                        <div id="image-preview-container" class="d-flex flex-wrap gap-3"></div>
+                        <p class="small fw-bold mb-2 text-success">Добавить новые фото:</p>
+                        <input type="file" name="images" id="image-input" class="form-control mb-3" multiple accept="image/*">
+                        <input type="hidden" name="main_new_image_index" id="main-new-image-index" value="0"> <!-- Скрытое поле -->
+                        
+                        <!-- Контейнер для предпросмотра -->
+                        <div id="image-preview-container" class="d-flex flex-wrap gap-3 mb-3"></div>
                     </div>
                     <input type="hidden" name="final_main_choice" id="final-main-choice" value="">
-                    <div class="d-flex justify-content-between mt-4">
+                    <div class="d-flex justify-content-between mt-4 align-items-center">
                         <a href="{% url 'lot_list' %}" class="btn btn-outline-secondary rounded-0">Отмена</a>
-                        <button type="submit" class="btn btn-primary rounded-0">
-                            {% if is_edit %}Сохранить изменения{% else %}Создать лот{% endif %}
-                        </button>
+                        
+                        <div class="d-flex gap-2">
+                            {% if is_edit %}
+                                <!-- Кнопка удаления (только при редактировании) -->
+                                <a href="{% url 'lot_delete' form.instance.id %}" class="btn btn-outline-danger rounded-0">Удалить лот</a>
+                            {% endif %}
+                            
+                            <button type="submit" class="btn btn-primary rounded-0">
+                                {% if is_edit %}Сохранить изменения{% else %}Создать лот{% endif %}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -80,88 +92,110 @@
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // --- 1. ЛОГИКА ДЛЯ НОВЫХ ФОТО ---
         const imageInput = document.getElementById('image-input');
         const previewContainer = document.getElementById('image-preview-container');
-        const finalMainChoice = document.getElementById('final-main-choice');
+        const mainIndexInput = document.getElementById('main-new-image-index');
+        let dataTransfer = new DataTransfer();
 
-        // 1. Функция для обновления скрытого поля при клике на ЛЮБУЮ радиокнопку (включая старые)
-        document.querySelectorAll('input[name="main_photo_choice"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                finalMainChoice.value = this.value;
+        if (imageInput && previewContainer) {
+            imageInput.addEventListener('change', function(event) {
+                Array.from(event.target.files).forEach(file => dataTransfer.items.add(file));
+                imageInput.files = dataTransfer.files;
+                renderPreviews();
+            });
+
+            const renderPreviews = () => {
+                previewContainer.innerHTML = '';
+                const files = Array.from(dataTransfer.files);
+
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'position-relative text-center';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'rounded object-fit-cover shadow-sm mb-1';
+                        img.style.width = '100px';
+                        img.style.height = '100px';
+                        
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.type = 'button';
+                        deleteBtn.innerHTML = '&times;';
+                        deleteBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center';
+                        deleteBtn.style.width = '20px';
+                        deleteBtn.style.height = '20px';
+                        deleteBtn.style.padding = '0';
+                        deleteBtn.style.transform = 'translate(50%, -50%)';
+                        
+                        deleteBtn.onclick = function() {
+                            const newDataTransfer = new DataTransfer();
+                            files.forEach((f, i) => {
+                                if (i !== index) newDataTransfer.items.add(f);
+                            });
+                            dataTransfer = newDataTransfer;
+                            imageInput.files = dataTransfer.files;
+                            if (parseInt(mainIndexInput.value) >= dataTransfer.files.length) {
+                                mainIndexInput.value = 0;
+                            }
+                            renderPreviews();
+                        };
+                        
+                        const mainBtn = document.createElement('button');
+                        mainBtn.type = 'button';
+                        mainBtn.innerText = (index === parseInt(mainIndexInput.value)) ? 'Главное' : 'Сделать главным';
+                        mainBtn.className = (index === parseInt(mainIndexInput.value)) ? 'btn btn-sm btn-success w-100 py-0' : 'btn btn-sm btn-outline-secondary w-100 py-0';
+                        mainBtn.style.fontSize = '0.7rem';
+                        
+                        mainBtn.onclick = function() {
+                            mainIndexInput.value = index;
+                            renderPreviews();
+                        };
+                        
+                        wrapper.appendChild(img);
+                        wrapper.appendChild(deleteBtn);
+                        wrapper.appendChild(mainBtn);
+                        previewContainer.appendChild(wrapper);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            };
+        }
+
+        // --- 2. AJAX ДЛЯ СТАРЫХ ФОТО (БЕЗ ПРЫЖКОВ) ---
+        document.querySelectorAll('.make-main-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const imageId = this.getAttribute('data-id');
+                
+                // Сохраняем позицию скролла
+                sessionStorage.setItem('scrollPos', window.scrollY);
+
+                const formData = new FormData();
+                formData.append('action', 'set_main_existing');
+                formData.append('image_id', imageId);
+
+                fetch(window.location.href, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        location.reload(); 
+                    }
+                });
             });
         });
 
-        // 2. Логика для предпросмотра НОВЫХ фото
-        if (imageInput && previewContainer) {
-            imageInput.addEventListener('change', function(event) {
-                const dataTransfer = new DataTransfer();
-                const files = Array.from(event.target.files);
-                files.forEach(file => dataTransfer.items.add(file));
-
-                const renderPreviews = () => {
-                    previewContainer.innerHTML = '';
-                    if (dataTransfer.files.length === 0) return;
-
-                    Array.from(dataTransfer.files).forEach((file, index) => {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'position-relative text-center';
-                            
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.className = 'rounded object-fit-cover shadow-sm mb-2';
-                            img.style.width = '120px';
-                            img.style.height = '120px';
-                            
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.type = 'button';
-                            deleteBtn.innerHTML = '&times;';
-                            deleteBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center';
-                            deleteBtn.style.width = '24px';
-                            deleteBtn.style.height = '24px';
-                            deleteBtn.style.padding = '0';
-                            deleteBtn.style.transform = 'translate(50%, -50%)';
-                            
-                            deleteBtn.onclick = function() {
-                                dataTransfer.items.remove(index);
-                                imageInput.files = dataTransfer.files;
-                                renderPreviews();
-                            };
-                            
-                            const radioLabel = document.createElement('label');
-                            radioLabel.className = 'd-block small text-muted mt-1';
-                            
-                            const radio = document.createElement('input');
-                            radio.type = 'radio';
-                            radio.name = 'main_photo_choice';
-                            radio.value = 'new_' + index;
-                            radio.className = 'form-check-input me-1';
-                            
-                            // Если это первое фото, делаем его выбранным по умолчанию
-                            if (index === 0) {
-                                radio.checked = true;
-                                finalMainChoice.value = 'new_0'; // Сразу записываем в скрытое поле
-                            }
-                            
-                            // При клике на радиокнопку обновляем скрытое поле
-                            radio.addEventListener('change', function() {
-                                finalMainChoice.value = this.value;
-                            });
-                            
-                            radioLabel.appendChild(radio);
-                            radioLabel.appendChild(document.createTextNode('Главное'));
-                            
-                            wrapper.appendChild(img);
-                            wrapper.appendChild(deleteBtn);
-                            wrapper.appendChild(radioLabel);
-                            previewContainer.appendChild(wrapper);
-                        }
-                        reader.readAsDataURL(file);
-                    });
-                };
-                renderPreviews();
-            });
+        // Восстанавливаем позицию при загрузке
+        const savedScrollPos = sessionStorage.getItem('scrollPos');
+        if (savedScrollPos) {
+            window.scrollTo(0, parseInt(savedScrollPos));
+            sessionStorage.removeItem('scrollPos');
         }
     });
 </script>

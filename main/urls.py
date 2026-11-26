@@ -12,4 +12,5 @@ urlpatterns = [
     path(
         "image/<int:image_id>/delete/", views.lot_image_delete, name="lot_image_delete"
     ),
+    path("lot/<int:lot_id>/delete/", views.lot_delete, name="lot_delete"),
 ]

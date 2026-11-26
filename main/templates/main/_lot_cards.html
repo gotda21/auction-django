@@ -6,11 +6,8 @@
             <!-- ... весь код карточки (картинка, текст, кнопка) ... -->
             <div class="position-relative" style="height: 250px; overflow: hidden;">
                 {% if lot.images.exists %}
-                    {% for image in lot.images.all %}
-                        {% if image.is_main or forloop.first %}
-                            <img src="{{ image.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ lot.title }}">
-                        {% endif %}
-                    {% endfor %}
+                    <!-- Берем просто самую первую картинку (она будет главной благодаря сортировке в модели) -->
+                    <img src="{{ lot.images.first.image.url }}" class="w-100 h-100 object-fit-contain" alt="{{ lot.title }}">
                 {% else %}
                     <div class="bg-light d-flex align-items-center justify-content-center h-100 text-muted">
                         <small>Нет фото</small>
@@ -20,13 +17,13 @@
             <div class="card-body px-2 py-3">
                 <div class="number_of_lot d-flex justify-content-between">
                     <p class="small mb-1 text-uppercase">Номер лота:</p>
-                    <p class="small mb-1 text-uppercase">{{ lot.id }}</p>
+                    <p class="small mb-1 text-uppercase" style="color: #4F7B9E">{{ lot.id }}</p>
                 </div>
                 <h6 class="card-title mb-2">{{ lot.title }}</h6>
                 
                 <div class="mb-2">
                     {% if lot.is_expired or lot.status == 'closed' %}
-                        <span class="badge bg-danger">Лот завершен</span>
+                        <span class="badge bg-danger rounded-0 w-100">Лот завершен</span>
                     {% else %}
                         <small class="">До: {{ lot.end_time|date:"d M, H:i" }}</small>
                     {% endif %}
@@ -41,7 +38,7 @@
                     </div>
                     <div class="price-desc d-flex flex-column">
                         <p class="text-uppercase small mb-0">Текущая цена:</p>
-                        <h5 class="mb-0">{{ lot.current_price|intcomma }} ₽</h5>
+                        <h5 class="mb-0" style="color: #4F7B9E">{{ lot.current_price|intcomma }} ₽</h5>
                     </div>
                 </div>
                 

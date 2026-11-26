@@ -107,6 +107,7 @@ class LotImage(models.Model):
     is_main = models.BooleanField(default=False, verbose_name="Главное фото")
 
     class Meta:
+        ordering = ["-is_main", "id"]
         models.UniqueConstraint(
             fields=["lot"], condition=Q(is_main=True), name="unique_main_image_per_lot"
         )
